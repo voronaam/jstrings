@@ -6,10 +6,13 @@ extern crate classreader;
 extern crate zip;
 extern crate docopt;
 extern crate rustc_serialize;
+extern crate java_properties;
 
 use docopt::Docopt;
 use classreader::*;
 use std::fs::File;
+use java_properties::PropertiesIter;
+use std::io::BufReader;
 
 const USAGE: &'static str = "
 Java Strings extractor.
@@ -38,9 +41,9 @@ fn main() {
             process_class_file(&f);
         } else if f.ends_with(".jar") {
             process_jar_file(&f);
-        } else {
-            println!("Ignoring unknown file type {}", f);
-        }
+        } else if f.ends_with(".properties") {
+            process_properties_file(&f);
+		}
     }
 }
 
@@ -49,10 +52,12 @@ fn process_jar_file(file_name: &String) {
     let mut zip = zip::ZipArchive::new(file).expect("could not read JAR");
     for i in 0..zip.len() {
         let mut class_file = zip.by_index(i).unwrap();
-        if class_file.name().ends_with("class") {
+        if class_file.name().ends_with(".class") {
             let class = ClassReader::new_from_reader(&mut class_file).unwrap();
             process_class(&class);
-        }
+        } else if class_file.name().ends_with(".properties") {
+			process_properties(class_file);
+		}
     }
 }
 
@@ -84,4 +89,15 @@ fn get_string(class: &Class, index: usize) -> String {
         &ConstantPoolInfo::Utf8(ref s) => s.clone(),
         _ => "?".to_string()
     }
+}
+
+fn process_properties_file(file_name: &String) {
+	let f = File::open(file_name).expect("couldn't find a file!");
+	process_properties(BufReader::new(f));
+}
+
+fn process_properties<R: std::io::Read>(f: R) {
+    PropertiesIter::new(f).read_into(|_, v| {
+      println!("{}", v);
+    }).expect("failed to read a properties file");
 }

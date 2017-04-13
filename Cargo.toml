@@ -8,3 +8,4 @@ classreader = "0.2.0"
 zip = {version = "0.2", default-features = false}
 docopt = "0.7"
 rustc-serialize = "0.3"
+java-properties = "1.0.0"
