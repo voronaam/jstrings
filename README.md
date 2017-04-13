@@ -1,0 +1,2 @@
+# jstrings
+Java Strings Extractor
