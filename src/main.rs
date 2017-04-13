@@ -29,7 +29,7 @@ Source can be one or more class or jar files.
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
-	arg_source: Vec<String>
+    arg_source: Vec<String>
 }
 
 fn main() {
@@ -43,7 +43,7 @@ fn main() {
             process_jar_file(&f);
         } else if f.ends_with(".properties") {
             process_properties_file(&f);
-		}
+        }
     }
 }
 
@@ -56,8 +56,8 @@ fn process_jar_file(file_name: &String) {
             let class = ClassReader::new_from_reader(&mut class_file).unwrap();
             process_class(&class);
         } else if class_file.name().ends_with(".properties") {
-			process_properties(class_file);
-		}
+            process_properties(class_file);
+        }
     }
 }
 
@@ -69,13 +69,13 @@ fn process_class_file(file_name: &String) {
 fn process_class(class: &Class) {
     assert_eq!(0xCAFEBABE, class.magic);
     for jstr in &class.constant_pool {
-		match jstr {
-			&ConstantPoolInfo::String(index) => {
-				println!("{}", get_string(&class, index as usize));
-			},
-			_ => {}
-		}
-	}
+        match jstr {
+            &ConstantPoolInfo::String(index) => {
+                println!("{}", get_string(&class, index as usize));
+            },
+            _ => {}
+        }
+    }
 }
 
 /// Get constant from a pool, correcting for java's 1-based indexes.
@@ -92,8 +92,8 @@ fn get_string(class: &Class, index: usize) -> String {
 }
 
 fn process_properties_file(file_name: &String) {
-	let f = File::open(file_name).expect("couldn't find a file!");
-	process_properties(BufReader::new(f));
+    let f = File::open(file_name).expect("couldn't find a file!");
+    process_properties(BufReader::new(f));
 }
 
 fn process_properties<R: std::io::Read>(f: R) {
