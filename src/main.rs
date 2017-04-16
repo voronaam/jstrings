@@ -24,7 +24,7 @@ Usage:
   javaminer (-h | --help)
 
 Options:
-  -e            Print entropy of each string
+  -e            Print average entropy of each string (average of entropy of each word in the string)
   -h --help     Show this screen.
 
 Source can be one or more class or jar files.
@@ -32,7 +32,7 @@ Source can be one or more class or jar files.
 
 #[derive(Debug, RustcDecodable)]
 struct Args {
-	flag_e: bool,
+    flag_e: bool,
     arg_source: Vec<String>
 }
 
@@ -109,16 +109,22 @@ fn process_properties<R: std::io::Read>(f: R, printer: fn(String)) {
 
 // Output variants
 fn printer_factory(args: &Args) -> fn(String) {
-	if args.flag_e {
-		return print_entropy;
-	}
-	return print_only;
+    if args.flag_e {
+        return print_entropy;
+    }
+    return print_only;
 }
 
 fn print_only(s: String) {
-	println!("{}", s);
+    println!("{}", s);
 }
 
 fn print_entropy(s: String) {
-	println!("{:>6.2} {}", shannon_entropy(&s), s);
+    println!("{:>6.2} {}", average_entropy(&s), s);
+}
+
+fn average_entropy(s: &String) -> f32 {
+    let tuple = s.split_whitespace().map(shannon_entropy).fold( (0.0, 0),
+      |acc, w| (acc.0 + w, acc.1 + 1));
+    return tuple.0 / tuple.1 as f32
 }
