@@ -27,3 +27,24 @@ those may fail. It may also consume more memory and CPU while doing this.
 
 Using Java Class parser from another language allows to analyze the class
 file "at rest". Which may also be valuable in some cases.
+
+## Usage
+
+```
+jstrings library.jar
+```
+This will print all string constants discovered in all of the files inside the Jar to stdout.
+
+
+```
+jstrings -e library.jar
+```
+
+Just like the above, but will also prepend with an average entropy in the string.
+Average entropy being average of entropies of each word in the string.
+
+## Why compute entropy?
+
+The use case it to pipe output to `sort -nr | head` and examine the highest-entropy strings
+in the jar file one is about to publish. This is to discover accientally included resources
+such as valid credentials from the test classes or pre-prod environments.
