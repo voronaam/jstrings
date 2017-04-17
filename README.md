@@ -51,6 +51,6 @@ Average entropy being average of entropies of each word in the string.
 
 ## Why compute entropy?
 
-The use case it to pipe output to `sort -nr | head` and examine the highest-entropy strings
+The use case is to pipe output to `sort -nr | head` and examine the highest-entropy strings
 in the jar file one is about to publish. This is to discover accientally included resources
 such as valid credentials from the test classes or pre-prod environments.
