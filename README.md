@@ -19,6 +19,12 @@ to check if any information we do not want to distribute ended up in the artifac
 It is meant to catch accidental inclusion of unit and integration test data into
 production artifacts.
 
+## Why not simply use strings
+
+the standard strings tool would extract strings from unarchived JAR files just fine,
+but it will extract all the strings. Including class names, method names and signatures.
+Knowing what is a user defined string and what is not helps to limit the output.
+
 ## Why Rust?
 
 It was possible to read jar files from java, load classes and inspect them using 
