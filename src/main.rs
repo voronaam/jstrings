@@ -52,7 +52,7 @@ fn main() {
     }
 }
 
-fn process_jar_file(file_name: &String, printer: fn(String)) {
+fn process_jar_file(file_name: &str, printer: fn(&str)) {
     let file = File::open(file_name).expect("couldn't find a file!");
     let mut zip = zip::ZipArchive::new(file).expect("could not read JAR");
     for i in 0..zip.len() {
@@ -66,20 +66,17 @@ fn process_jar_file(file_name: &String, printer: fn(String)) {
     }
 }
 
-fn process_class_file(file_name: &String, printer: fn(String)) {
-    let class = ClassReader::new_from_path(&file_name).unwrap();
+fn process_class_file(file_name: &str, printer: fn(&str)) {
+    let class = ClassReader::new_from_path(file_name).unwrap();
     process_class(&class, printer);
 }
 
-fn process_class(class: &Class, printer: fn(String)) {
+fn process_class(class: &Class, printer: fn(&str)) {
     assert_eq!(0xCAFEBABE, class.magic);
     for jstr in &class.constant_pool {
-        match jstr {
-            &ConstantPoolInfo::String(index) => {
-                printer(get_string(&class, index as usize));
-            },
-            _ => {}
-        }
+		if let ConstantPoolInfo::String(index) = *jstr {
+			printer(get_string(class, index as usize));
+		}
     }
 }
 
@@ -89,42 +86,42 @@ fn get_const(class: &Class, i: usize) -> &ConstantPoolInfo {
 }
 
 /// Get string from constant pool
-fn get_string(class: &Class, index: usize) -> String {
-    match get_const(class, index) {
-        &ConstantPoolInfo::Utf8(ref s) => s.clone(),
-        _ => "?".to_string()
+fn get_string(class: &Class, index: usize) -> &str {
+    match *get_const(class, index) {
+        ConstantPoolInfo::Utf8(ref s) => s,
+        _ => "?"
     }
 }
 
-fn process_properties_file(file_name: &String, printer: fn(String)) {
+fn process_properties_file(file_name: &str, printer: fn(&str)) {
     let f = File::open(file_name).expect("couldn't find a file!");
     process_properties(BufReader::new(f), printer);
 }
 
-fn process_properties<R: std::io::Read>(f: R, printer: fn(String)) {
+fn process_properties<R: std::io::Read>(f: R, printer: fn(&str)) {
     PropertiesIter::new(f).read_into(|_, v| {
-      printer( v);
+      printer(&v);
     }).expect("failed to read a properties file");
 }
 
 // Output variants
-fn printer_factory(args: &Args) -> fn(String) {
+fn printer_factory(args: &Args) -> fn(&str) {
     if args.flag_e {
         return print_entropy;
     }
-    return print_only;
+    print_only
 }
 
-fn print_only(s: String) {
+fn print_only(s: &str) {
     println!("{}", s);
 }
 
-fn print_entropy(s: String) {
-    println!("{:>6.2} {}", average_entropy(&s), s);
+fn print_entropy(s: &str) {
+    println!("{:>6.2} {}", average_entropy(s), s);
 }
 
-fn average_entropy(s: &String) -> f32 {
+fn average_entropy(s: &str) -> f32 {
     let tuple = s.split_whitespace().map(shannon_entropy).fold( (0.0, 0),
       |acc, w| (acc.0 + w, acc.1 + 1));
-    return tuple.0 / tuple.1 as f32
+    tuple.0 / tuple.1 as f32
 }
