@@ -40,7 +40,7 @@ struct Args {
     arg_source: Vec<String>
 }
 
-type Printer = Box<Fn(&str)>;
+type Printer = Box<dyn Fn(&str)>;
 
 fn main() {
     let args: Args = Docopt::new(USAGE)
@@ -64,8 +64,9 @@ fn process_jar_file(file_name: &str, printer: &Printer) {
     for i in 0..zip.len() {
         let mut class_file = zip.by_index(i).unwrap();
         if class_file.name().ends_with(".class") {
-            let class = ClassReader::new_from_reader(&mut class_file).unwrap();
-            process_class(&class, printer);
+			if let Ok(class) = ClassReader::new_from_reader(&mut class_file) {
+				process_class(&class, printer);
+			}
         } else if class_file.name().ends_with(".properties") {
             process_properties(class_file, printer);
         }
