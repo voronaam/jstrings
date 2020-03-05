@@ -22,11 +22,13 @@ Java Strings extractor.
 
 Usage:
   jstrings [-e] <source>...
-  javaminer (-h | --help)
+  jstrings [-t <threshold>] <source>...
+  jstrings (-h | --help)
 
 Options:
-  -e            Print average entropy of each string (average of entropy of each word in the string)
-  -h --help     Show this screen.
+  -e              Print average entropy of each string (average of entropy of each word in the string)
+  -t <threshold>  Do not print string with entropy below threshold. Implies entropy computation.
+  -h --help       Show this screen.
 
 Source can be one or more class or jar files.
 ";
@@ -34,8 +36,11 @@ Source can be one or more class or jar files.
 #[derive(Debug, Deserialize)]
 struct Args {
     flag_e: bool,
+    flag_t: Option<f32>,
     arg_source: Vec<String>
 }
+
+type Printer = Box<Fn(&str)>;
 
 fn main() {
     let args: Args = Docopt::new(USAGE)
@@ -44,16 +49,16 @@ fn main() {
     let printer = printer_factory(&args);
     for f in args.arg_source {
         if f.ends_with(".class") {
-            process_class_file(&f, printer);
+            process_class_file(&f, &printer);
         } else if f.ends_with(".jar") {
-            process_jar_file(&f, printer);
+            process_jar_file(&f, &printer);
         } else if f.ends_with(".properties") {
-            process_properties_file(&f, printer);
+            process_properties_file(&f, &printer);
         }
     }
 }
 
-fn process_jar_file(file_name: &str, printer: fn(&str)) {
+fn process_jar_file(file_name: &str, printer: &Printer) {
     let file = File::open(file_name).expect("couldn't find a file!");
     let mut zip = zip::ZipArchive::new(file).expect("could not read JAR");
     for i in 0..zip.len() {
@@ -67,12 +72,12 @@ fn process_jar_file(file_name: &str, printer: fn(&str)) {
     }
 }
 
-fn process_class_file(file_name: &str, printer: fn(&str)) {
+fn process_class_file(file_name: &str, printer: &Printer) {
     let class = ClassReader::new_from_path(file_name).unwrap();
     process_class(&class, printer);
 }
 
-fn process_class(class: &Class, printer: fn(&str)) {
+fn process_class(class: &Class, printer: &Printer) {
     assert_eq!(0xCAFEBABE, class.magic);
     for jstr in &class.constant_pool {
 		if let ConstantPoolInfo::String(index) = *jstr {
@@ -94,31 +99,39 @@ fn get_string(class: &Class, index: usize) -> &str {
     }
 }
 
-fn process_properties_file(file_name: &str, printer: fn(&str)) {
+fn process_properties_file(file_name: &str, printer: &Printer) {
     let f = File::open(file_name).expect("couldn't find a file!");
     process_properties(BufReader::new(f), printer);
 }
 
-fn process_properties<R: std::io::Read>(f: R, printer: fn(&str)) {
+fn process_properties<R: std::io::Read>(f: R, printer: &Printer) {
     PropertiesIter::new(f).read_into(|_, v| {
       printer(&v);
     }).expect("failed to read a properties file");
 }
 
 // Output variants
-fn printer_factory(args: &Args) -> fn(&str) {
+fn printer_factory(args: &Args) -> Printer {
+	if let Some(t) = args.flag_t {
+		return Box::new(move |s: &str| {
+				let e = average_entropy(s);
+				if e >= t {
+					println!("{:>6.2} {}", e, s)
+				}
+			})
+	}
     if args.flag_e {
-        return print_entropy;
+        return Box::new(print_entropy)
     }
-    print_only
+    Box::new(print_only)
 }
 
 fn print_only(s: &str) {
-    println!("{}", s);
+    println!("{}", s)
 }
 
 fn print_entropy(s: &str) {
-    println!("{:>6.2} {}", average_entropy(s), s);
+    println!("{:>6.2} {}", average_entropy(s), s)
 }
 
 fn average_entropy(s: &str) -> f32 {
