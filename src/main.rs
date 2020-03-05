@@ -5,11 +5,12 @@
 extern crate classreader;
 extern crate zip;
 extern crate docopt;
-extern crate rustc_serialize;
+extern crate serde;
 extern crate java_properties;
 extern crate shannon_entropy;
 
 use docopt::Docopt;
+use serde::Deserialize;
 use classreader::*;
 use std::fs::File;
 use java_properties::PropertiesIter;
@@ -30,7 +31,7 @@ Options:
 Source can be one or more class or jar files.
 ";
 
-#[derive(Debug, RustcDecodable)]
+#[derive(Debug, Deserialize)]
 struct Args {
     flag_e: bool,
     arg_source: Vec<String>
@@ -38,7 +39,7 @@ struct Args {
 
 fn main() {
     let args: Args = Docopt::new(USAGE)
-                            .and_then(|d| d.decode())
+                            .and_then(|d| d.deserialize())
                             .unwrap_or_else(|e| e.exit());
     let printer = printer_factory(&args);
     for f in args.arg_source {
